@@ -1,0 +1,23 @@
+# Database
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+drizzle/
+migrations/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+temp/ 
+
+*.bat
