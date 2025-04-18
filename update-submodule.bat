@@ -110,7 +110,7 @@ if %errorlevel% neq 0 (
 
 cd ..
 
-update_main
+:update_main
 rem 保存当前状态
 echo [DEBUG] 获取当前分支信息
 for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD') do set CURRENT_BRANCH=%%i
