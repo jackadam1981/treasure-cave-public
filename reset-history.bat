@@ -47,23 +47,23 @@ for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD') do set "CURRENT_BRA
 echo [DEBUG] Current branch: %CURRENT_BRANCH%
 
 :: Process each branch in main repository
-for /f "tokens=* delims= " %%i in ('git branch') do (
+echo [DEBUG] Processing branches:
+git branch | findstr /v /c:"*" >branches.txt
+for /f "tokens=* delims= " %%i in (branches.txt) do (
     set "BRANCH=%%i"
-    if "!BRANCH:~0,1!"=="*" (
-        set "BRANCH=!BRANCH:~2!"
-    )
     echo [DEBUG] Processing branch: !BRANCH!
     :: Delete existing temp branch if it exists
     git branch | findstr "temp_!BRANCH!" >nul
     if %errorlevel% EQU 0 (
         echo [DEBUG] Deleting existing temp_!BRANCH! branch
         git worktree remove temp_!BRANCH! >nul 2>&1
-        git branch -D temp_!BRANCH!
+        git branch -D temp_!BRANCH! 2>nul
     )
     :: Create new temp branch
     call :create_orphan_branch !BRANCH!
     if not %errorlevel% EQU 0 goto error
 )
+del branches.txt
 
 echo [DEBUG] Switching back to original branch
 git checkout %CURRENT_BRANCH%
@@ -88,16 +88,32 @@ exit /b 0
 
 :clean_temp_branches
 echo [DEBUG] Cleaning temporary branches
+:: First, switch to a non-temp branch if we're on a temp branch
+git branch | findstr /c:"*" >current_branch.txt
+for /f "tokens=* delims= " %%i in (current_branch.txt) do (
+    set "BRANCH=%%i"
+    set "BRANCH=!BRANCH:* =!"
+    echo !BRANCH! | findstr "temp" >nul
+    if not %errorlevel% EQU 1 (
+        echo [DEBUG] Currently on temp branch, switching to main
+        git checkout main
+    )
+)
+del current_branch.txt
+
+:: Now clean up temp branches
 for /f "tokens=* delims= " %%i in ('git branch') do (
     set "BRANCH=%%i"
     if "!BRANCH:~0,1!"=="*" (
         set "BRANCH=!BRANCH:~2!"
     )
-    echo !BRANCH! | findstr "temp" >nul
-    if not %errorlevel% EQU 1 (
-        echo [DEBUG] Deleting local branch: !BRANCH!
-        git worktree remove !BRANCH! >nul 2>&1
-        git branch -D !BRANCH!
+    if not "!BRANCH!"=="" (
+        echo !BRANCH! | findstr "temp" >nul
+        if not %errorlevel% EQU 1 (
+            echo [DEBUG] Deleting local branch: !BRANCH!
+            git worktree remove !BRANCH! >nul 2>&1
+            git branch -D !BRANCH! 2>nul
+        )
     )
 )
 
