@@ -149,6 +149,23 @@ echo === 处理当前分支 %CURRENT_BRANCH% ===
 
 rem 拉取当前分支的最新代码
 echo [DEBUG] 拉取最新代码
+:: 检查是否有未合并的文件
+git status --porcelain | findstr /r "^U" >nul
+if %errorlevel% equ 0 (
+    echo [DEBUG] 发现未合并的文件
+    git status
+    echo.
+    set /p MERGE_CONFIRM=是否放弃未合并的更改 (Y/N) 
+    if /i not "!MERGE_CONFIRM!"=="Y" (
+        echo [DEBUG] 用户取消操作
+        exit /b 0
+    )
+    :: 放弃未合并的更改
+    echo [DEBUG] 放弃未合并的更改
+    git reset --hard
+    git clean -fd
+)
+
 git pull origin %CURRENT_BRANCH%
 if %errorlevel% neq 0 (
     echo [ERROR] 无法拉取分支 %CURRENT_BRANCH% 的最新代码
@@ -205,6 +222,7 @@ if %errorlevel% neq 0 (
     echo [ERROR] 无法切换到分支 %TARGET_BRANCH%
     goto error
 )
+
 
 rem 拉取目标分支的最新代码
 echo [DEBUG] 拉取最新代码
